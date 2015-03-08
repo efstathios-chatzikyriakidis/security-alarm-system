@@ -29,7 +29,7 @@ const unsigned long DELAY_TIME_OF_RINGING_SIREN = 2400000; // 40 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
 const unsigned long DELAY_TIME_OF_LED_BLINKING = 2000; // 2 seconds
 const unsigned long DELAY_TIME_OF_WAITING_CALL_TO_RING = 20000; // 20 seconds
-const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
+const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 8000; // 8 seconds
 const unsigned long DELAY_TIME_BEFORE_STARTING_NEXT_CALL = 5000; // 5 seconds
 
 const byte NOTIFICATIONS_PER_RECIPIENT = 3;

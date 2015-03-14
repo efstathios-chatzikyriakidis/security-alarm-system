@@ -18,9 +18,17 @@ class SimpleGSM : public SoftwareSerial
 
     bool sendSMS (const String phoneNumber, const String message);
 
+    bool missedCall (const String phoneNumber, const unsigned long ringingDuration);
+
     bool startCall (const String phoneNumber);
 
-    bool callRings (const unsigned long timeOut);
+    bool callIsDialing ();
+
+    bool callIsRinging ();
+
+    void waitOnCallDialing ();
+
+    void waitOnCallRinging (const unsigned long duration);
 
     bool hangCall ();
 
@@ -30,6 +38,8 @@ class SimpleGSM : public SoftwareSerial
     bool setEcho (const bool state);
 
     bool setSMSMode (const byte mode);
+
+    void sendCallStatusCommand ();
 
     bool responseIsReceived (char * const pattern, const long timeOut);
 

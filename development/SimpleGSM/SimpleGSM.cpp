@@ -94,7 +94,7 @@ SimpleGSM::sendSMS (const String phoneNumber, const String message)
 
   this->print(F("\"\r"));
 
-  if (!this->responseIsReceived("\r\n> ", 4000))
+  if (!this->responseIsReceived("\r\n> ", 2000))
   {
     return false;
   }
@@ -119,21 +119,65 @@ SimpleGSM::startCall (const String phoneNumber)
 }
 
 bool
-SimpleGSM::callRings(const unsigned long timeOut)
+SimpleGSM::callIsDialing()
+{
+  this->sendCallStatusCommand();
+
+  return this->responseIsReceived("+CLCC: 1,0,2,0,0", 500);
+}
+
+bool
+SimpleGSM::callIsRinging()
+{
+  this->sendCallStatusCommand();
+
+  return this->responseIsReceived("+CLCC: 1,0,3,0,0", 500);
+}
+
+void
+SimpleGSM::waitOnCallDialing()
+{
+  while (this->callIsDialing()) ;
+}
+
+void
+SimpleGSM::waitOnCallRinging(const unsigned long duration)
 {
   const unsigned long previousMillis = millis();
 
-  while ((unsigned long) (millis() - previousMillis) < timeOut)
+  while ((unsigned long) (millis() - previousMillis) < duration)
   {
-    this->print(F("AT+CLCC\r"));
-
-    if (this->responseIsReceived("+CLCC: 1,0,3,0,0", 300))
+    if (!this->callIsRinging())
     {
-      return true;
+      break;
     }
+  }
+}
+
+bool
+SimpleGSM::missedCall (const String phoneNumber, const unsigned long ringingDuration)
+{
+  if (this->startCall(phoneNumber))
+  {
+    this->waitOnCallDialing();
+
+    if (this->callIsRinging())
+    {
+      this->waitOnCallRinging(ringingDuration);
+    }
+
+    this->hangCall();
+
+    return true;
   }
 
   return false;
+}
+
+void
+SimpleGSM::sendCallStatusCommand()
+{
+  this->print(F("AT+CLCC\r"));
 }
 
 bool

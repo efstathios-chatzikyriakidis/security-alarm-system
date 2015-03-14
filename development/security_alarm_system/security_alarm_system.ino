@@ -21,18 +21,16 @@ const byte BUTTON_PIN = 4;
 const byte SIREN_PIN = A0;
 const byte LED_PIN = A2;
 
-const unsigned long DELAY_TIME_OF_PIR_SENSOR_CALIBRATION = 30000; // 30 seconds
+const unsigned long DELAY_TIME_OF_PIR_SENSOR_CALIBRATION = 40000; // 40 seconds
 const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 15000; // 15 seconds
 const unsigned long DELAY_TIME_WHILE_ENABLING_ALARM = 120000; // 2 minutes
 const unsigned long DELAY_TIME_BEFORE_READING_SERIAL = 2000; // 2 seconds
-const unsigned long DELAY_TIME_OF_RINGING_SIREN = 2400000; // 40 minutes
+const unsigned long DELAY_TIME_OF_RINGING_SIREN = 900000; // 15 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
 const unsigned long DELAY_TIME_OF_LED_BLINKING = 2000; // 2 seconds
-const unsigned long DELAY_TIME_OF_WAITING_CALL_TO_RING = 20000; // 20 seconds
 const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
-const unsigned long DELAY_TIME_BEFORE_STARTING_NEXT_CALL = 5000; // 5 seconds
 
-const byte NOTIFICATIONS_PER_RECIPIENT = 3;
+const byte NOTIFICATIONS_PER_USER = 3;
 
 const String SMS_MESSAGE = "Security";
 
@@ -252,13 +250,9 @@ realThreatUpdateOperation ()
 {
   sirenOn();
 
-  printStringWithoutDelay(F("Sending SMSs"));
+  printStringWithoutDelay(F("Notifying Users"));
 
-  smsRecipients();
-
-  printStringWithoutDelay(F("Making calls"));
-
-  callRecipients();
+  notifyUsers();
 
   printStringWithoutDelay(F("Waiting police"));
 
@@ -603,43 +597,21 @@ rfidCodeExists (const String & rfidCode)
 }
 
 void
-smsRecipients ()
+notifyUsers ()
 {
   const byte numberOfMobiles = getSystemMobiles().size();
 
-  for (byte i = 0; i < NOTIFICATIONS_PER_RECIPIENT; i++)
+  SimpleGSM & gsm = getSystemGsm();
+
+  for (byte i = 0; i < NOTIFICATIONS_PER_USER; i++)
   {
     for (byte j = 0; j < numberOfMobiles; j++)
     {
       const String mobile = getSystemMobiles().get(j);
 
-      getSystemGsm().sendSMS(mobile, SMS_MESSAGE);
-    }
-  }
-}
+      gsm.missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
 
-void
-callRecipients ()
-{
-  const byte numberOfMobiles = getSystemMobiles().size();
-
-  for (byte i = 0; i < NOTIFICATIONS_PER_RECIPIENT; i++)
-  {
-    for (byte j = 0; j < numberOfMobiles; j++)
-    {
-      const String mobile = getSystemMobiles().get(j);
-
-      if (getSystemGsm().startCall(mobile))
-      {
-        if (getSystemGsm().callRings(DELAY_TIME_OF_WAITING_CALL_TO_RING))
-        {
-          delay(DELAY_TIME_OF_CALL_RINGING_DURATION);
-        }
-
-        getSystemGsm().hangCall();
-
-        delay (DELAY_TIME_BEFORE_STARTING_NEXT_CALL);
-      }
+      gsm.sendSMS(mobile, SMS_MESSAGE);
     }
   }
 }

@@ -601,17 +601,15 @@ notifyUsers ()
 {
   const byte numberOfMobiles = getSystemMobiles().size();
 
-  SimpleGSM & gsm = getSystemGsm();
-
   for (byte i = 0; i < NOTIFICATIONS_PER_USER; i++)
   {
     for (byte j = 0; j < numberOfMobiles; j++)
     {
       const String mobile = getSystemMobiles().get(j);
 
-      gsm.missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
+      getSystemGsm().missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
 
-      gsm.sendSMS(mobile, SMS_MESSAGE);
+      getSystemGsm().sendSMS(mobile, SMS_MESSAGE);
     }
   }
 }

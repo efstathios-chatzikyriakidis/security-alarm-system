@@ -121,7 +121,7 @@ SimpleGSM::startCall (const String phoneNumber)
 bool
 SimpleGSM::callIsDialing()
 {
-  this->sendCallStatusCommand();
+  this->queryForCallStatus();
 
   return this->responseIsReceived("+CLCC: 1,0,2,0,0", 500);
 }
@@ -129,7 +129,7 @@ SimpleGSM::callIsDialing()
 bool
 SimpleGSM::callIsRinging()
 {
-  this->sendCallStatusCommand();
+  this->queryForCallStatus();
 
   return this->responseIsReceived("+CLCC: 1,0,3,0,0", 500);
 }
@@ -175,7 +175,7 @@ SimpleGSM::missedCall (const String phoneNumber, const unsigned long ringingDura
 }
 
 void
-SimpleGSM::sendCallStatusCommand()
+SimpleGSM::queryForCallStatus()
 {
   this->print(F("AT+CLCC\r"));
 }

@@ -39,7 +39,7 @@ class SimpleGSM : public SoftwareSerial
 
     bool setSMSMode (const byte mode);
 
-    void sendCallStatusCommand ();
+    void queryForCallStatus ();
 
     bool responseIsReceived (char * const pattern, const long timeOut);
 

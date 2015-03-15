@@ -1,7 +1,7 @@
 #include <FiniteStateMachine.h>
 #include <ShiftRegLCD123.h>
 #include <SoftwareSerial.h>
-#include <SimpleGSM.h>
+#include <SimpleGsm.h>
 #include <LinkedList.h>
 #include <SPI.h>
 #include <SD.h>
@@ -104,14 +104,14 @@ getSystemLcd ()
   return *object;
 }
 
-SimpleGSM &
+SimpleGsm &
 getSystemGsm ()
 {
-  static SimpleGSM * object = NULL;
+  static SimpleGsm * object = NULL;
 
   if (object == NULL)
   {
-    object = new SimpleGSM (GSM_RECEIVER_LINE_PIN, GSM_TRANSMITTER_LINE_PIN, GSM_POWER_PIN);
+    object = new SimpleGsm (GSM_RECEIVER_LINE_PIN, GSM_TRANSMITTER_LINE_PIN, GSM_POWER_PIN);
   }
 
   return *object;
@@ -292,7 +292,7 @@ initializeGsm()
     return false;
   }
 
-  if (!getSystemGsm().setSMSTextMode())
+  if (!getSystemGsm().setSmsTextMode())
   {
     return false;
   }
@@ -592,7 +592,7 @@ notifyUsers ()
 
       getSystemGsm().missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
 
-      getSystemGsm().sendSMS(mobile, smsText);
+      getSystemGsm().sendSms(mobile, smsText);
     }
   }
 }

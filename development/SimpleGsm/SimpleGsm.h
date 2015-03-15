@@ -1,22 +1,22 @@
-#ifndef _SimpleGSM_H
-#define _SimpleGSM_H
+#ifndef _SimpleGsm_H
+#define _SimpleGsm_H
 
 #include "Arduino.h"
 
 #include <SoftwareSerial.h>
 
-class SimpleGSM : public SoftwareSerial
+class SimpleGsm : public SoftwareSerial
 {
   public:
-    SimpleGSM (const byte rxPin, const byte txPin, const byte powerPin);
+    SimpleGsm (const byte rxPin, const byte txPin, const byte powerPin);
 
     bool begin (const long baudRate, const byte numberOfRetries);
 
     bool disableEcho ();
 
-    bool setSMSTextMode ();
+    bool setSmsTextMode ();
 
-    bool sendSMS (const String phoneNumber, const String message);
+    bool sendSms (const String phoneNumber, const String message);
 
     bool missedCall (const String phoneNumber, const unsigned long ringingDuration);
 
@@ -37,7 +37,7 @@ class SimpleGSM : public SoftwareSerial
 
     bool setEcho (const bool state);
 
-    bool setSMSMode (const byte mode);
+    bool setSmsMode (const byte mode);
 
     void queryForCallStatus ();
 
@@ -48,4 +48,4 @@ class SimpleGSM : public SoftwareSerial
     byte _powerPin;
 };
 
-#endif /* _SimpleGSM_H */
+#endif /* _SimpleGsm_H */

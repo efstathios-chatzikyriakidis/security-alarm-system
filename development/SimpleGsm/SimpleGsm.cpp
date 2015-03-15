@@ -1,6 +1,6 @@
-#include "SimpleGSM.h"
+#include "SimpleGsm.h"
 
-SimpleGSM::SimpleGSM (const byte rxPin, const byte txPin, const byte powerPin) : SoftwareSerial (rxPin, txPin)
+SimpleGsm::SimpleGsm (const byte rxPin, const byte txPin, const byte powerPin) : SoftwareSerial (rxPin, txPin)
 {
   _powerPin = powerPin;
 
@@ -8,7 +8,7 @@ SimpleGSM::SimpleGSM (const byte rxPin, const byte txPin, const byte powerPin) :
 }
 
 void
-SimpleGSM::restart ()
+SimpleGsm::restart ()
 {
   digitalWrite(_powerPin, HIGH);
 
@@ -20,7 +20,7 @@ SimpleGSM::restart ()
 }
 
 bool
-SimpleGSM::responseIsReceived (char * const pattern, const long timeOut)
+SimpleGsm::responseIsReceived (char * const pattern, const long timeOut)
 {
   this->setTimeout(timeOut);
 
@@ -28,19 +28,19 @@ SimpleGSM::responseIsReceived (char * const pattern, const long timeOut)
 }
 
 bool
-SimpleGSM::disableEcho ()
+SimpleGsm::disableEcho ()
 {
   return this->setEcho (false);
 }
 
 bool
-SimpleGSM::setSMSTextMode ()
+SimpleGsm::setSmsTextMode ()
 {
-  return this->setSMSMode (1);
+  return this->setSmsMode (1);
 }
 
 bool
-SimpleGSM::setEcho (const bool state)
+SimpleGsm::setEcho (const bool state)
 {
   this->print(F("ATE"));
 
@@ -52,7 +52,7 @@ SimpleGSM::setEcho (const bool state)
 }
 
 bool
-SimpleGSM::setSMSMode (const byte mode)
+SimpleGsm::setSmsMode (const byte mode)
 {
   this->print(F("AT+CMGF="));
 
@@ -64,7 +64,7 @@ SimpleGSM::setSMSMode (const byte mode)
 }
 
 bool
-SimpleGSM::begin (const long baudRate, const byte numberOfRetries)
+SimpleGsm::begin (const long baudRate, const byte numberOfRetries)
 {
   SoftwareSerial::begin (baudRate);
 
@@ -86,7 +86,7 @@ SimpleGSM::begin (const long baudRate, const byte numberOfRetries)
 }
 
 bool
-SimpleGSM::sendSMS (const String phoneNumber, const String message)
+SimpleGsm::sendSms (const String phoneNumber, const String message)
 {
   this->print(F("AT+CMGS=\""));
 
@@ -107,7 +107,7 @@ SimpleGSM::sendSMS (const String phoneNumber, const String message)
 }
 
 bool
-SimpleGSM::startCall (const String phoneNumber)
+SimpleGsm::startCall (const String phoneNumber)
 {
   this->print(F("ATD"));
 
@@ -119,7 +119,7 @@ SimpleGSM::startCall (const String phoneNumber)
 }
 
 bool
-SimpleGSM::callIsDialing()
+SimpleGsm::callIsDialing()
 {
   this->queryForCallStatus();
 
@@ -127,7 +127,7 @@ SimpleGSM::callIsDialing()
 }
 
 bool
-SimpleGSM::callIsRinging()
+SimpleGsm::callIsRinging()
 {
   this->queryForCallStatus();
 
@@ -135,13 +135,13 @@ SimpleGSM::callIsRinging()
 }
 
 void
-SimpleGSM::waitOnCallDialing()
+SimpleGsm::waitOnCallDialing()
 {
   while (this->callIsDialing()) ;
 }
 
 void
-SimpleGSM::waitOnCallRinging(const unsigned long duration)
+SimpleGsm::waitOnCallRinging(const unsigned long duration)
 {
   const unsigned long previousMillis = millis();
 
@@ -155,7 +155,7 @@ SimpleGSM::waitOnCallRinging(const unsigned long duration)
 }
 
 bool
-SimpleGSM::missedCall (const String phoneNumber, const unsigned long ringingDuration)
+SimpleGsm::missedCall (const String phoneNumber, const unsigned long ringingDuration)
 {
   if (this->startCall(phoneNumber))
   {
@@ -175,17 +175,17 @@ SimpleGSM::missedCall (const String phoneNumber, const unsigned long ringingDura
 }
 
 void
-SimpleGSM::queryForCallStatus()
+SimpleGsm::queryForCallStatus()
 {
   this->print(F("AT+CLCC\r"));
 }
 
 bool
-SimpleGSM::hangCall ()
+SimpleGsm::hangCall ()
 {
   this->print(F("ATH\r"));
 
   return this->responseIsReceived(OK_RESPONSE_FORMAT, 2000);
 }
 
-char * SimpleGSM::OK_RESPONSE_FORMAT = "\r\nOK\r\n";
+char * SimpleGsm::OK_RESPONSE_FORMAT = "\r\nOK\r\n";

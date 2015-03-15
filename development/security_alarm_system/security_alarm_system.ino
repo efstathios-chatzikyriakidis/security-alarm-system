@@ -410,10 +410,10 @@ rfidTagHandled (String & rfidCode)
   byte tempByte = 0;
 
   // code characters length.
-  const byte RFID_CODE_SIZE = 10;
+  const byte rfidCodeSize = 10;
 
   // code read as null-terminated string.
-  char codeRead[RFID_CODE_SIZE + 1] = { '\0' };
+  char codeRead[rfidCodeSize + 1] = { '\0' };
 
   // if there are any data coming from the RFID reader.
   if (Serial.available () > 0)
@@ -422,7 +422,7 @@ rfidTagHandled (String & rfidCode)
     if (0x02 == (value = Serial.read ()))
     {
       // read the RFID 10-digit code & the 2 digit checksum.
-      while (bytesRead < (RFID_CODE_SIZE + 2))
+      while (bytesRead < (rfidCodeSize + 2))
       {
         // if there are any data coming from the RFID reader.
         if (Serial.available () > 0)
@@ -438,7 +438,7 @@ rfidTagHandled (String & rfidCode)
           }
 
           // store the RFID code digits to an array.
-          if (bytesRead < RFID_CODE_SIZE)
+          if (bytesRead < rfidCodeSize)
           {
             codeRead[bytesRead] = value;
           }
@@ -477,7 +477,7 @@ rfidTagHandled (String & rfidCode)
       }
 
       // handle the RFID 10-digit code & the 2 digit checksum data.
-      if (bytesRead == (RFID_CODE_SIZE + 2))
+      if (bytesRead == (rfidCodeSize + 2))
       {
         // check if the RFID code is correct.
         if (code[5] == checksum)
@@ -580,11 +580,11 @@ rfidCodeExists (const String & rfidCode)
 void
 notifyUsers ()
 {
-  const byte NOTIFICATIONS_PER_USER = 3;
+  const byte notificationsPerUser = 3;
 
   const byte numberOfMobiles = getSystemMobiles().size();
 
-  for (byte i = 0; i < NOTIFICATIONS_PER_USER; i++)
+  for (byte i = 0; i < notificationsPerUser; i++)
   {
     for (byte j = 0; j < numberOfMobiles; j++)
     {

@@ -3,8 +3,6 @@
 #include <SoftwareSerial.h>
 #include <SimpleGSM.h>
 #include <LinkedList.h>
-#include <Button.h>
-#include <LED.h>
 #include <SPI.h>
 #include <SD.h>
 
@@ -17,18 +15,14 @@ const byte GSM_TRANSMITTER_LINE_PIN = 3;
 const byte GSM_POWER_PIN = 7;
 const byte DOOR_SENSOR_PIN = A3;
 const byte PIR_SENSOR_PIN = A1;
-const byte BUTTON_PIN = 4;
 const byte SIREN_PIN = A0;
-const byte LED_PIN = A2;
 
 const unsigned long DELAY_TIME_OF_PIR_SENSOR_CALIBRATION = 40000; // 40 seconds
-const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 15000; // 15 seconds
+const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
 const unsigned long DELAY_TIME_WHILE_ENABLING_ALARM = 120000; // 2 minutes
-const unsigned long DELAY_TIME_BEFORE_READING_SERIAL = 2000; // 2 seconds
+const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 15000; // 15 seconds
 const unsigned long DELAY_TIME_OF_RINGING_SIREN = 900000; // 15 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
-const unsigned long DELAY_TIME_OF_LED_BLINKING = 2000; // 2 seconds
-const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
 
 const byte NOTIFICATIONS_PER_USER = 3;
 
@@ -122,32 +116,6 @@ getSystemGsm ()
   if (object == NULL)
   {
     object = new SimpleGSM (GSM_RECEIVER_LINE_PIN, GSM_TRANSMITTER_LINE_PIN, GSM_POWER_PIN);
-  }
-
-  return *object;
-}
-
-LED &
-getSystemLed ()
-{
-  static LED * object = NULL;
-
-  if (object == NULL)
-  {
-    object = new LED (LED_PIN);
-  }
-
-  return *object;
-}
-
-Button &
-getSystemButton ()
-{
-  static Button * object = NULL;
-
-  if (object == NULL)
-  {
-    object = new Button (BUTTON_PIN);
   }
 
   return *object;
@@ -373,10 +341,7 @@ systemError (const __FlashStringHelper * string)
 {
   printStringWithoutDelay(string);
 
-  while (true)
-  {
-    getSystemLed().blink(DELAY_TIME_OF_LED_BLINKING);
-  }
+  while (true) ;
 }
 
 void
@@ -532,7 +497,7 @@ rfidTagHandled (String & rfidCode)
   return false;
 }
 
-void
+bool
 readSystemRfids()
 {
   getSystemRfids().clear();
@@ -547,14 +512,14 @@ readSystemRfids()
     }
 
     file.close();
+
+    return true;
   }
-  else
-  {
-    systemError(F("Error in RFIDs"));
-  }
+
+  return false;
 }
 
-void
+bool
 readSystemMobiles()
 {
   getSystemMobiles().clear();
@@ -569,11 +534,11 @@ readSystemMobiles()
     }
 
     file.close();
+
+    return true;
   }
-  else
-  {
-    systemError(F("Error in Mobiles"));
-  }
+
+  return false;
 }
 
 bool
@@ -615,25 +580,9 @@ notifyUsers ()
 }
 
 void
-waitUntilButtonIsPressed ()
-{
-  while (!getSystemButton().uniquePress()) continue;
-}
-
-void
 readEncryptionKey ()
 {
-  const long baudRate = 9600;
-
-  Serial.begin(baudRate);
-
-  while (! Serial.available ()) continue;
-
-  delay(DELAY_TIME_BEFORE_READING_SERIAL);
-
-  encryptionKey = Serial.readStringUntil('\n');
-
-  Serial.end();
+  while (!rfidTagHandled(encryptionKey)) ;
 }
 
 String
@@ -677,53 +626,59 @@ setup ()
 {
   initializeSiren();
 
-  getSystemLed().on();
-
-  readEncryptionKey();
-
-  waitUntilButtonIsPressed();
-
-  getSystemLed().off();
-
   initializeLcd();
-
-  printString(F("Init SD card"));
-
-  if (!initializeSdCard())
-  {
-    systemError (F("SD init failed"));
-  }
-
-  printString(F("SD init OK"));
-
-  printString(F("Reading RFIDs"));
-
-  readSystemRfids();
-
-  printString(F("Reading Mobiles"));
-
-  readSystemMobiles();
 
   printString(F("Init door sensor"));
 
   initializeDoorSensor();
 
-  printString(F("Init GSM"));
-
-  if (!initializeGsm())
-  {
-    systemError (F("Init GSM failed"));
-  }
-
-  printString(F("Init GSM OK"));
-
   printString(F("Init PIR sensor"));
 
   initializePirSensor();
 
+  printString(F("Init GSM"));
+
+  if (!initializeGsm())
+  {
+    systemError (F("GSM failed"));
+  }
+
+  printString(F("GSM OK"));
+
+  printString(F("Init SD card"));
+
+  if (!initializeSdCard())
+  {
+    systemError (F("SD card failed"));
+  }
+
+  printString(F("SD card OK"));
+
+  printString(F("Read RFIDs"));
+
+  if (!readSystemRfids())
+  {
+    systemError(F("RFIDs failed"));
+  }
+
+  printString(F("RFIDs OK"));
+
+  printString(F("Read mobiles"));
+
+  if (!readSystemMobiles())
+  {
+    systemError(F("Mobiles failed"));
+  }
+
+  printString(F("Mobiles OK"));
+
   printString(F("Init RFID"));
 
   initializeRfid();
+
+  printString(F("Read key"));
+
+  readEncryptionKey();
 }
 
 void

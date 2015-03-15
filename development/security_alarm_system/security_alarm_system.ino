@@ -24,11 +24,7 @@ const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 15000; // 15 seconds
 const unsigned long DELAY_TIME_OF_RINGING_SIREN = 900000; // 15 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
 
-const byte NOTIFICATIONS_PER_USER = 3;
-
-const String SMS_MESSAGE = "Security";
-
-String encryptionKey;
+String smsText, encryptionKey;
 
 State &
 getDisabledState ()
@@ -520,6 +516,26 @@ readSystemRfids()
 }
 
 bool
+readSmsText()
+{
+  File file = SD.open("message.txt");
+
+  if (file)
+  {
+    if (file.available())
+    {
+      smsText = file.readStringUntil('\n');
+    }
+
+    file.close();
+
+    return true;
+  }
+
+  return false;
+}
+
+bool
 readSystemMobiles()
 {
   getSystemMobiles().clear();
@@ -564,6 +580,8 @@ rfidCodeExists (const String & rfidCode)
 void
 notifyUsers ()
 {
+  const byte NOTIFICATIONS_PER_USER = 3;
+
   const byte numberOfMobiles = getSystemMobiles().size();
 
   for (byte i = 0; i < NOTIFICATIONS_PER_USER; i++)
@@ -574,7 +592,7 @@ notifyUsers ()
 
       getSystemGsm().missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
 
-      getSystemGsm().sendSMS(mobile, SMS_MESSAGE);
+      getSystemGsm().sendSMS(mobile, smsText);
     }
   }
 }
@@ -671,6 +689,15 @@ setup ()
   }
 
   printString(F("Mobiles OK"));
+
+  printString(F("Read SMS text"));
+
+  if (!readSmsText())
+  {
+    systemError(F("SMS text failed"));
+  }
+
+  printString(F("SMS text OK"));
 
   printString(F("Init RFID"));
 

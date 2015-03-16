@@ -10,8 +10,8 @@ const byte DEFAULT_SLAVE_SELECT_PIN = 10;
 const byte SD_SHIELD_CHIP_SELECT_PIN = 8;
 const byte SHIFT_REGISTER_CLOCK_PIN = 9;
 const byte SHIFT_REGISTER_DATA_PIN = 6;
-const byte GSM_RECEIVER_LINE_PIN = 2;
-const byte GSM_TRANSMITTER_LINE_PIN = 3;
+const byte GSM_RECEIVER_PIN = 2;
+const byte GSM_TRANSMITTER_PIN = 3;
 const byte GSM_POWER_PIN = 7;
 const byte DOOR_SENSOR_PIN = A3;
 const byte PIR_SENSOR_PIN = A1;
@@ -19,7 +19,7 @@ const byte SIREN_PIN = A0;
 
 const unsigned long DELAY_TIME_OF_PIR_SENSOR_CALIBRATION = 40000; // 40 seconds
 const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
-const unsigned long DELAY_TIME_WHILE_ENABLING_ALARM = 120000; // 2 minutes
+const unsigned long DELAY_TIME_BEFORE_ENABLING_ALARM = 120000; // 2 minutes
 const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 15000; // 15 seconds
 const unsigned long DELAY_TIME_OF_RINGING_SIREN = 900000; // 15 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
@@ -79,7 +79,7 @@ getRealThreatState ()
 }
 
 FSM &
-getSystemFsm ()
+getFsm ()
 {
   static FSM * object = NULL;
 
@@ -92,7 +92,7 @@ getSystemFsm ()
 }
 
 ShiftRegLCD123 &
-getSystemLcd ()
+getLcd ()
 {
   static ShiftRegLCD123 * object = NULL;
 
@@ -105,20 +105,20 @@ getSystemLcd ()
 }
 
 SimpleGsm &
-getSystemGsm ()
+getGsm ()
 {
   static SimpleGsm * object = NULL;
 
   if (object == NULL)
   {
-    object = new SimpleGsm (GSM_RECEIVER_LINE_PIN, GSM_TRANSMITTER_LINE_PIN, GSM_POWER_PIN);
+    object = new SimpleGsm (GSM_RECEIVER_PIN, GSM_TRANSMITTER_PIN, GSM_POWER_PIN);
   }
 
   return *object;
 }
 
 LinkedList <String> &
-getSystemRfids ()
+getRfids ()
 {
   static LinkedList <String> * object = NULL;
 
@@ -131,7 +131,7 @@ getSystemRfids ()
 }
 
 LinkedList <String> &
-getSystemMobiles ()
+getMobiles ()
 {
   static LinkedList <String> * object = NULL;
 
@@ -148,7 +148,7 @@ disabledEnterOperation ()
 {
   printStringWithoutDelay(F("Alarm disabled"));
 
-  flushSystemRfid();
+  flushRfid();
 }
 
 void
@@ -156,7 +156,7 @@ disabledUpdateOperation ()
 {
   if (isAuthenticated ())
   {
-    getSystemFsm().transitionTo(getEnabledState());
+    getFsm().transitionTo(getEnabledState());
   }
 }
 
@@ -165,7 +165,7 @@ disabledExitOperation ()
 {
   printStringWithoutDelay(F("Enabling alarm"));
 
-  delay (DELAY_TIME_WHILE_ENABLING_ALARM);
+  delay (DELAY_TIME_BEFORE_ENABLING_ALARM);
 }
 
 void
@@ -173,7 +173,7 @@ enabledEnterOperation ()
 {
   printStringWithoutDelay(F("Alarm enabled"));
 
-  flushSystemRfid();
+  flushRfid();
 }
 
 void
@@ -181,12 +181,12 @@ enabledUpdateOperation ()
 {
   if (pirSensorSensesMotion() || isDoorOpen ())
   {
-    getSystemFsm().transitionTo(getPossibleThreatState());
+    getFsm().transitionTo(getPossibleThreatState());
   }
 
   if (isAuthenticated ())
   {
-    getSystemFsm().transitionTo(getDisabledState());
+    getFsm().transitionTo(getDisabledState());
   }
 }
 
@@ -201,11 +201,11 @@ possibleThreatUpdateOperation ()
 {
   if (authenticatedOnDelay(DELAY_TIME_OF_CRITICAL_SECTION))
   {
-    getSystemFsm().transitionTo(getDisabledState());
+    getFsm().transitionTo(getDisabledState());
   }
   else
   {
-    getSystemFsm().transitionTo(getRealThreatState());
+    getFsm().transitionTo(getRealThreatState());
   }
 }
 
@@ -224,7 +224,7 @@ realThreatUpdateOperation ()
 
   sirenOff();
 
-  getSystemFsm().transitionTo(getDisabledState());
+  getFsm().transitionTo(getDisabledState());
 }
 
 bool
@@ -258,11 +258,11 @@ initializeLcd ()
 
   const byte numberOfRows = 2;
 
-  getSystemLcd().begin(numberOfColumns, numberOfRows);
+  getLcd().begin(numberOfColumns, numberOfRows);
 
-  getSystemLcd().backlightOff();
+  getLcd().backlightOff();
 
-  getSystemLcd().clear();
+  getLcd().clear();
 }
 
 void
@@ -272,7 +272,7 @@ initializeRfid()
 
   Serial.begin (baudRate);
 
-  flushSystemRfid();
+  flushRfid();
 }
 
 bool
@@ -282,17 +282,17 @@ initializeGsm()
 
   const byte numberOfRetries = 10;
 
-  if (!getSystemGsm().begin(baudRate, numberOfRetries))
+  if (!getGsm().begin(baudRate, numberOfRetries))
   {
     return false;
   }
 
-  if (!getSystemGsm().disableEcho())
+  if (!getGsm().disableEcho())
   {
     return false;
   }
 
-  if (!getSystemGsm().setSmsTextMode())
+  if (!getGsm().setSmsTextMode())
   {
     return false;
   }
@@ -343,9 +343,9 @@ systemError (const __FlashStringHelper * string)
 void
 printStringWithoutDelay (const __FlashStringHelper * string)
 {
-  getSystemLcd().clear();
+  getLcd().clear();
 
-  getSystemLcd().print(string);
+  getLcd().print(string);
 }
 
 void
@@ -357,7 +357,7 @@ printString (const __FlashStringHelper * string)
 }
 
 void
-flushSystemRfid()
+flushRfid()
 {
   while (Serial.available ())
   {
@@ -368,7 +368,7 @@ flushSystemRfid()
 bool
 authenticatedOnDelay (const unsigned long milliseconds)
 {
-  flushSystemRfid();
+  flushRfid();
 
   const unsigned long previousMillis = millis();
 
@@ -494,9 +494,9 @@ rfidTagHandled (String & rfidCode)
 }
 
 bool
-readSystemRfids()
+readRfids()
 {
-  getSystemRfids().clear();
+  getRfids().clear();
 
   File file = SD.open("rfids.txt");
 
@@ -504,7 +504,7 @@ readSystemRfids()
   {
     while (file.available())
     {
-      getSystemRfids().add(file.readStringUntil('\n'));
+      getRfids().add(file.readStringUntil('\n'));
     }
 
     file.close();
@@ -536,9 +536,9 @@ readSmsText()
 }
 
 bool
-readSystemMobiles()
+readMobiles()
 {
-  getSystemMobiles().clear();
+  getMobiles().clear();
 
   File file = SD.open("mobiles.txt");
 
@@ -546,7 +546,7 @@ readSystemMobiles()
   {
     while (file.available())
     {
-      getSystemMobiles().add(file.readStringUntil('\n'));
+      getMobiles().add(file.readStringUntil('\n'));
     }
 
     file.close();
@@ -562,11 +562,11 @@ rfidCodeExists (const String & rfidCode)
 {
   const String cipherText = xorEncryption (encryptionKey, rfidCode);
 
-  const byte numberOfRfids = getSystemRfids().size();
+  const byte numberOfRfids = getRfids().size();
 
   for (byte i = 0; i < numberOfRfids; i++)
   {
-    const String rfid = getSystemRfids().get(i);
+    const String rfid = getRfids().get(i);
 
     if (cipherText == rfid)
     {
@@ -582,17 +582,17 @@ notifyUsers ()
 {
   const byte notificationsPerUser = 3;
 
-  const byte numberOfMobiles = getSystemMobiles().size();
+  const byte numberOfMobiles = getMobiles().size();
 
   for (byte i = 0; i < notificationsPerUser; i++)
   {
     for (byte j = 0; j < numberOfMobiles; j++)
     {
-      const String mobile = getSystemMobiles().get(j);
+      const String mobile = getMobiles().get(j);
 
-      getSystemGsm().missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
+      getGsm().missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
 
-      getSystemGsm().sendSms(mobile, smsText);
+      getGsm().sendSms(mobile, smsText);
     }
   }
 }
@@ -674,7 +674,7 @@ setup ()
 
   printString(F("Read RFIDs"));
 
-  if (!readSystemRfids())
+  if (!readRfids())
   {
     systemError(F("RFIDs failed"));
   }
@@ -683,7 +683,7 @@ setup ()
 
   printString(F("Read mobiles"));
 
-  if (!readSystemMobiles())
+  if (!readMobiles())
   {
     systemError(F("Mobiles failed"));
   }
@@ -711,5 +711,5 @@ setup ()
 void
 loop ()
 {
-  getSystemFsm().update();
+  getFsm().update();
 }

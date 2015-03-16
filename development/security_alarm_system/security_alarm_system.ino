@@ -394,56 +394,34 @@ isAuthenticated ()
 bool
 rfidTagHandled (String & rfidCode)
 {
-  // temporary data received from RFID reader.
-  byte value = 0;
-
-  // code + checksum data of RFID tag received.
-  byte code[6];
-
-  // checksum data of RFID tag received.
-  byte checksum = 0;
-
-  // number of received data from RFID reader.
-  byte bytesRead = 0;
-
-  // temporary value used for checksum calculation.
-  byte tempByte = 0;
-
-  // code characters length.
   const byte rfidCodeSize = 10;
 
-  // code read as null-terminated string.
+  byte code[6], value, checkSum, bytesRead, tempByte;
+
+  value = checkSum = bytesRead = tempByte = 0;
+
   char codeRead[rfidCodeSize + 1] = { '\0' };
 
-  // if there are any data coming from the RFID reader.
   if (Serial.available () > 0)
   {
-    // check for the STX header (0x02 ASCII value).
     if (0x02 == (value = Serial.read ()))
     {
-      // read the RFID 10-digit code & the 2 digit checksum.
       while (bytesRead < (rfidCodeSize + 2))
       {
-        // if there are any data coming from the RFID reader.
         if (Serial.available () > 0)
         {
-          // get a byte from the RFID reader.
           value = Serial.read ();
 
-          // check for ETX | STX | CR | LF.
           if ((0x0D == value) || (0x0A == value) || (0x03 == value) || (0x02 == value))
           {
-            // stop reading - there is an error.
             break;
           }
 
-          // store the RFID code digits to an array.
           if (bytesRead < rfidCodeSize)
           {
             codeRead[bytesRead] = value;
           }
 
-          // convert hex tag ID.
           if ((value >= '0') && (value <= '9'))
           {
             value = value - '0';
@@ -453,17 +431,13 @@ rfidTagHandled (String & rfidCode)
             value = 10 + value - 'A';
           }
 
-          // every two hex-digits, add byte to code.
           if (bytesRead & 1 == 1)
           {
-            // make some space for this hex-digit by shifting
-            // the previous hex-digit with 4 bits to the left.
             code[bytesRead >> 1] = (value | (tempByte << 4));
 
             if (bytesRead >> 1 != 5)
             {
-              // if we're at the checksum byte, calculate the checksum (XOR).
-              checksum ^= code[bytesRead >> 1];
+              checkSum ^= code[bytesRead >> 1];
             }
           }
           else
@@ -471,16 +445,13 @@ rfidTagHandled (String & rfidCode)
             tempByte = value;
           }
 
-          // ready to read next digit.
           bytesRead++;
         }
       }
 
-      // handle the RFID 10-digit code & the 2 digit checksum data.
       if (bytesRead == (rfidCodeSize + 2))
       {
-        // check if the RFID code is correct.
-        if (code[5] == checksum)
+        if (code[5] == checkSum)
         {
           rfidCode = String(codeRead);
 

@@ -30,7 +30,7 @@ const byte SHIFT_REGISTER_DATA_PIN = 6;
 const byte GSM_RECEIVER_PIN = 2;
 const byte GSM_TRANSMITTER_PIN = 3;
 const byte GSM_POWER_PIN = 7;
-const byte DOOR_SENSOR_PIN = A3;
+const byte DOOR_SENSOR_PIN = 4;
 const byte PIR_SENSOR_PIN = A1;
 const byte SIREN_PIN = A0;
 

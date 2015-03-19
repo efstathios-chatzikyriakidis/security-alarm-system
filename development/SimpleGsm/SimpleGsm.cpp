@@ -65,7 +65,7 @@ SimpleGsm::setEcho (const bool state)
 
   this->print(F("\r"));
 
-  return this->responseIsReceived(OK_RESPONSE_FORMAT, 2000);
+  return this->responseIsReceived(OK_RESPONSE_FORMAT, 3000);
 }
 
 bool
@@ -77,7 +77,7 @@ SimpleGsm::setSmsMode (const byte mode)
 
   this->print(F("\r"));
 
-  return this->responseIsReceived(OK_RESPONSE_FORMAT, 2000);
+  return this->responseIsReceived(OK_RESPONSE_FORMAT, 3000);
 }
 
 bool
@@ -93,7 +93,7 @@ SimpleGsm::begin (const long baudRate, const byte numberOfRetries)
 
     this->print(F("AT\r"));
 
-    if (this->responseIsReceived(OK_RESPONSE_FORMAT, 2000))
+    if (this->responseIsReceived(OK_RESPONSE_FORMAT, 3000))
     {
       return true;
     }
@@ -111,7 +111,7 @@ SimpleGsm::sendSms (const String phoneNumber, const String message)
 
   this->print(F("\"\r"));
 
-  if (!this->responseIsReceived("\r\n> ", 2000))
+  if (!this->responseIsReceived("\r\n> ", 3000))
   {
     return false;
   }
@@ -120,7 +120,7 @@ SimpleGsm::sendSms (const String phoneNumber, const String message)
 
   this->write(0x1A);
 
-  return this->responseIsReceived(OK_RESPONSE_FORMAT, 8000);
+  return this->responseIsReceived(OK_RESPONSE_FORMAT, 10000);
 }
 
 bool
@@ -132,7 +132,7 @@ SimpleGsm::startCall (const String phoneNumber)
 
   this->print(F(";\r"));
 
-  return this->responseIsReceived(OK_RESPONSE_FORMAT, 2000);
+  return this->responseIsReceived(OK_RESPONSE_FORMAT, 3000);
 }
 
 bool
@@ -202,7 +202,7 @@ SimpleGsm::hangCall ()
 {
   this->print(F("ATH\r"));
 
-  return this->responseIsReceived(OK_RESPONSE_FORMAT, 2000);
+  return this->responseIsReceived(OK_RESPONSE_FORMAT, 3000);
 }
 
 char * SimpleGsm::OK_RESPONSE_FORMAT = "\r\nOK\r\n";

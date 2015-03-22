@@ -20,6 +20,7 @@
 #include <SoftwareSerial.h>
 #include <SimpleGsm.h>
 #include <LinkedList.h>
+#include <NewTone.h>
 #include <SPI.h>
 #include <SD.h>
 
@@ -31,6 +32,7 @@ const byte GSM_RECEIVER_PIN = 2;
 const byte GSM_TRANSMITTER_PIN = 3;
 const byte GSM_POWER_PIN = 7;
 const byte DOOR_SENSOR_PIN = 4;
+const byte PIEZO_BUZZER_PIN = 5;
 const byte PIR_SENSOR_PIN = A1;
 const byte SIREN_PIN = A0;
 
@@ -216,7 +218,7 @@ possibleThreatEnterOperation ()
 void
 possibleThreatUpdateOperation ()
 {
-  if (authenticatedOnDelay(DELAY_TIME_OF_CRITICAL_SECTION))
+  if (authenticatedOnBeeping(DELAY_TIME_OF_CRITICAL_SECTION))
   {
     getFsm().transitionTo(getDisabledState());
   }
@@ -385,9 +387,9 @@ flushRfid()
 bool
 authenticatedOnDelay (const unsigned long milliseconds)
 {
-  flushRfid();
-
   const unsigned long previousMillis = millis();
+
+  flushRfid();
 
   while ((unsigned long) (millis() - previousMillis) < milliseconds)
   {
@@ -395,6 +397,36 @@ authenticatedOnDelay (const unsigned long milliseconds)
     {
       return true;
     }
+  }
+
+  return false;
+}
+
+bool
+authenticatedOnBeeping (const unsigned long milliseconds)
+{
+  const unsigned long previousMillis = millis();
+
+  const unsigned long toneFrequency = 500;
+
+  const unsigned long durationTime = 50;
+
+  flushRfid();
+
+  while ((unsigned long) (millis() - previousMillis) < milliseconds)
+  {
+    if (isAuthenticated ())
+    {
+      return true;
+    }
+
+    NewTone(PIEZO_BUZZER_PIN, toneFrequency);
+
+    delay(durationTime);
+
+    noNewTone();
+
+    delay(durationTime);
   }
 
   return false;

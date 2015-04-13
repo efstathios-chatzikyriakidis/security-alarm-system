@@ -40,7 +40,7 @@ const unsigned long DELAY_TIME_OF_PIR_SENSOR_CALIBRATION = 40000; // 40 seconds
 const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
 const unsigned long DELAY_TIME_BEFORE_ENABLING_ALARM = 120000; // 2 minutes
 const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 15000; // 15 seconds
-const unsigned long DELAY_TIME_OF_RINGING_SIREN = 900000; // 15 minutes
+const unsigned long DELAY_TIME_OF_RINGING_SIREN = 600000; // 10 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
 
 String smsText, encryptionKey;

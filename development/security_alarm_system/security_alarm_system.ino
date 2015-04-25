@@ -85,13 +85,26 @@ getPossibleThreatState ()
 }
 
 State &
-getRealThreatState ()
+getRealThreatPartAState ()
 {
   static State * object = NULL;
 
   if (object == NULL)
   {
-    object = new State (realThreatUpdateOperation);
+    object = new State (realThreatPartAUpdateOperation);
+  }
+
+  return *object;
+}
+
+State &
+getRealThreatPartBState ()
+{
+  static State * object = NULL;
+
+  if (object == NULL)
+  {
+    object = new State (realThreatPartBUpdateOperation);
   }
 
   return *object;
@@ -165,6 +178,8 @@ getMobiles ()
 void
 disabledEnterOperation ()
 {
+  sirenOff();
+
   printStringWithoutDelay(F("Alarm disabled"));
 
   flushRfid();
@@ -198,7 +213,7 @@ enabledEnterOperation ()
 void
 enabledUpdateOperation ()
 {
-  if (pirSensorSensesMotion() || isDoorOpen ())
+  if (pirSensorSensesMotion() || doorIsOpen ())
   {
     getFsm().transitionTo(getPossibleThreatState());
   }
@@ -224,12 +239,12 @@ possibleThreatUpdateOperation ()
   }
   else
   {
-    getFsm().transitionTo(getRealThreatState());
+    getFsm().transitionTo(getRealThreatPartAState());
   }
 }
 
 void
-realThreatUpdateOperation ()
+realThreatPartAUpdateOperation ()
 {
   sirenOn();
 
@@ -239,11 +254,30 @@ realThreatUpdateOperation ()
 
   printStringWithoutDelay(F("Waiting police"));
 
-  authenticatedOnDelay(DELAY_TIME_OF_RINGING_SIREN);
+  if (authenticatedOnDelay(DELAY_TIME_OF_RINGING_SIREN))
+  {
+    getFsm().transitionTo(getDisabledState());
+  }
+  else
+  {
+    getFsm().transitionTo(getRealThreatPartBState());
+  }
+}
 
-  sirenOff();
+void
+realThreatPartBUpdateOperation ()
+{
+  if (doorIsClosed())
+  {
+    sirenOff();
 
-  getFsm().transitionTo(getDisabledState());
+    getFsm().transitionTo(getEnabledState());
+  }
+
+  if (isAuthenticated ())
+  {
+    getFsm().transitionTo(getDisabledState());
+  }
 }
 
 bool
@@ -340,9 +374,15 @@ sirenOff ()
 }
 
 bool
-isDoorOpen ()
+doorIsOpen ()
 {
   return digitalRead(DOOR_SENSOR_PIN) == HIGH;
+}
+
+bool
+doorIsClosed ()
+{
+  return ! doorIsOpen ();
 }
 
 bool

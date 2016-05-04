@@ -60,7 +60,7 @@ class SimpleGsm : public SoftwareSerial
 
     bool responseIsReceived (char * const pattern, const long timeOut);
 
-    static char * OK_RESPONSE_FORMAT;
+    static char * const OK_RESPONSE_FORMAT;
 
     byte _powerPin;
 };

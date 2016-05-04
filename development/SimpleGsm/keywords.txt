@@ -1,0 +1,25 @@
+###################################
+# Syntax Coloring Map For SimpleGsm
+###################################
+
+######################
+# Datatypes (KEYWORD1)
+######################
+
+SimpleGsm	KEYWORD1
+
+##################################
+# Methods and Functions (KEYWORD2)
+##################################
+
+begin	KEYWORD2
+disableEcho	KEYWORD2
+setSmsTextMode	KEYWORD2
+sendSms	KEYWORD2
+missedCall	KEYWORD2
+startCall	KEYWORD2
+callIsDialing	KEYWORD2
+callIsRinging	KEYWORD2
+waitOnCallDialing	KEYWORD2
+waitOnCallRinging	KEYWORD2
+hangCall	KEYWORD2

@@ -205,4 +205,4 @@ SimpleGsm::hangCall ()
   return this->responseIsReceived(OK_RESPONSE_FORMAT, 3000);
 }
 
-char * SimpleGsm::OK_RESPONSE_FORMAT = "\r\nOK\r\n";
+char * const SimpleGsm::OK_RESPONSE_FORMAT = "\r\nOK\r\n";

@@ -19,7 +19,7 @@
 #include <ShiftRegLCD123.h>
 #include <SoftwareSerial.h>
 #include <SimpleGsm.h>
-#include <LinkedList.h>
+#include <SimpleList.h>
 #include <NewTone.h>
 #include <SPI.h>
 #include <SD.h>
@@ -33,15 +33,16 @@ const byte GSM_TRANSMITTER_PIN = 3;
 const byte GSM_POWER_PIN = 7;
 const byte DOOR_SENSOR_PIN = 4;
 const byte PIEZO_BUZZER_PIN = 5;
-const byte PIR_SENSOR_PIN = A1;
 const byte SIREN_PIN = A0;
 
-const unsigned long DELAY_TIME_OF_PIR_SENSOR_CALIBRATION = 40000; // 40 seconds
 const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
 const unsigned long DELAY_TIME_BEFORE_ENABLING_ALARM = 120000; // 2 minutes
-const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 15000; // 15 seconds
+const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 10000; // 10 seconds
+const unsigned long DELAY_TIME_BEFORE_BEEPING_SOUNDS = 7000; // 7 seconds
 const unsigned long DELAY_TIME_OF_RINGING_SIREN = 600000; // 10 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
+
+const byte MAXIMUM_NOTIFICATIONS_PER_USER = 3;
 
 String smsText, encryptionKey;
 
@@ -52,7 +53,20 @@ getDisabledState ()
 
   if (object == NULL)
   {
-    object = new State (disabledEnterOperation, disabledUpdateOperation, disabledExitOperation);
+    object = new State (disabledEnterOperation, disabledUpdateOperation, NULL);
+  }
+
+  return *object;
+}
+
+State &
+getActivationPreparationState ()
+{
+  static State * object = NULL;
+
+  if (object == NULL)
+  {
+    object = new State (activationPreparationEnterOperation, activationPreparationUpdateOperation, NULL);
   }
 
   return *object;
@@ -149,27 +163,27 @@ getGsm ()
   return *object;
 }
 
-LinkedList <String> &
+SimpleList <String> &
 getRfids ()
 {
-  static LinkedList <String> * object = NULL;
+  static SimpleList <String> * object = NULL;
 
   if (object == NULL)
   {
-    object = new LinkedList <String> ();
+    object = new SimpleList <String> ();
   }
 
   return *object;
 }
 
-LinkedList <String> &
+SimpleList <String> &
 getMobiles ()
 {
-  static LinkedList <String> * object = NULL;
+  static SimpleList <String> * object = NULL;
 
   if (object == NULL)
   {
-    object = new LinkedList <String> ();
+    object = new SimpleList <String> ();
   }
 
   return *object;
@@ -181,8 +195,6 @@ disabledEnterOperation ()
   sirenOff();
 
   printStringWithoutDelay(F("Alarm disabled"));
-
-  flushRfid();
 }
 
 void
@@ -190,30 +202,44 @@ disabledUpdateOperation ()
 {
   if (isAuthenticated ())
   {
-    getFsm().transitionTo(getEnabledState());
+    getFsm().transitionTo(getActivationPreparationState());
   }
 }
 
 void
-disabledExitOperation ()
+activationPreparationEnterOperation ()
 {
-  printStringWithoutDelay(F("Enabling alarm"));
+  printStringWithoutDelay(F("Preparing alarm"));
+}
 
-  delay (DELAY_TIME_BEFORE_ENABLING_ALARM);
+void
+activationPreparationUpdateOperation()
+{
+  getFsm().transitionTo(getEnabledState());
+
+  const unsigned long timeMark = millis();
+
+  while(inTime(timeMark, DELAY_TIME_BEFORE_ENABLING_ALARM))
+  {
+    if (isAuthenticated ())
+    {
+      getFsm().transitionTo(getDisabledState());
+
+      break;
+    }
+  }
 }
 
 void
 enabledEnterOperation ()
 {
   printStringWithoutDelay(F("Alarm enabled"));
-
-  flushRfid();
 }
 
 void
 enabledUpdateOperation ()
 {
-  if (pirSensorSensesMotion() || doorIsOpen ())
+  if (doorIsOpen ())
   {
     getFsm().transitionTo(getPossibleThreatState());
   }
@@ -233,7 +259,7 @@ possibleThreatEnterOperation ()
 void
 possibleThreatUpdateOperation ()
 {
-  if (authenticatedOnBeeping(DELAY_TIME_OF_CRITICAL_SECTION))
+  if (authenticatedOnBeeping(DELAY_TIME_OF_CRITICAL_SECTION, DELAY_TIME_BEFORE_BEEPING_SOUNDS))
   {
     getFsm().transitionTo(getDisabledState());
   }
@@ -250,9 +276,11 @@ realThreatPartAUpdateOperation ()
 
   printStringWithoutDelay(F("Notifying Users"));
 
-  notifyUsers();
+  notifyUsers(DELAY_TIME_OF_CALL_RINGING_DURATION, MAXIMUM_NOTIFICATIONS_PER_USER);
 
   printStringWithoutDelay(F("Waiting police"));
+
+  flushRfid();
 
   if (authenticatedOnDelay(DELAY_TIME_OF_RINGING_SIREN))
   {
@@ -288,14 +316,6 @@ initializeSdCard ()
   pinMode (SD_SHIELD_CHIP_SELECT_PIN, OUTPUT);
 
   return SD.begin(SD_SHIELD_CHIP_SELECT_PIN);
-}
-
-void
-initializePirSensor ()
-{
-  pinMode (PIR_SENSOR_PIN, INPUT);
-
-  delay (DELAY_TIME_OF_PIR_SENSOR_CALIBRATION);
 }
 
 void
@@ -361,6 +381,21 @@ initializeSiren ()
   sirenOff ();
 }
 
+bool
+inTime (const unsigned long timeMark, const unsigned long timeInterval)
+{
+  const unsigned long currentTime = millis();
+
+  const unsigned long elapsedTime = currentTime - timeMark;
+
+  if (elapsedTime >= timeInterval)
+  {
+    return false;
+  }
+
+  return true;
+}
+
 void
 sirenOn ()
 {
@@ -376,7 +411,7 @@ sirenOff ()
 bool
 doorIsOpen ()
 {
-  return digitalRead(DOOR_SENSOR_PIN) == HIGH;
+  return doorHasValue (HIGH);
 }
 
 bool
@@ -386,9 +421,37 @@ doorIsClosed ()
 }
 
 bool
-pirSensorSensesMotion ()
+doorHasValue (const int expectedValue)
 {
-  return digitalRead(PIR_SENSOR_PIN) == HIGH;
+  if (digitalRead(DOOR_SENSOR_PIN) == expectedValue)
+  {
+    const byte numberOfSamples = 50;
+
+    const unsigned long delayTimeBetweenSamples = 10;
+
+    const byte thresholdPercentage = 85;
+
+    byte actualPercentage = 0;
+
+    for (byte i = 0; i < numberOfSamples; i++)
+    {
+      if (digitalRead(DOOR_SENSOR_PIN) == expectedValue)
+      {
+        actualPercentage++;
+      }
+
+      delay(delayTimeBetweenSamples);
+    }
+
+    actualPercentage *= (100.0 / numberOfSamples);
+
+    if (actualPercentage >= thresholdPercentage)
+    {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void
@@ -427,11 +490,9 @@ flushRfid()
 bool
 authenticatedOnDelay (const unsigned long milliseconds)
 {
-  const unsigned long previousMillis = millis();
+  const unsigned long timeMark = millis();
 
-  flushRfid();
-
-  while ((unsigned long) (millis() - previousMillis) < milliseconds)
+  while (inTime(timeMark, milliseconds))
   {
     if (isAuthenticated ())
     {
@@ -443,30 +504,21 @@ authenticatedOnDelay (const unsigned long milliseconds)
 }
 
 bool
-authenticatedOnBeeping (const unsigned long milliseconds)
+authenticatedOnBeeping (const unsigned long delayTimeOfCriticalSection, const unsigned long delayTimeBeforeBeepingSounds)
 {
-  const unsigned long previousMillis = millis();
+  const unsigned long timeMark = millis();
 
-  const unsigned long toneFrequency = 500;
-
-  const unsigned long durationTime = 50;
-
-  flushRfid();
-
-  while ((unsigned long) (millis() - previousMillis) < milliseconds)
+  while (inTime(timeMark, delayTimeOfCriticalSection))
   {
     if (isAuthenticated ())
     {
       return true;
     }
 
-    NewTone(PIEZO_BUZZER_PIN, toneFrequency);
-
-    delay(durationTime);
-
-    noNewTone();
-
-    delay(durationTime);
+    if (!inTime(timeMark, delayTimeBeforeBeepingSounds))
+    {
+      generateBeepSound();
+    }
   }
 
   return false;
@@ -478,6 +530,22 @@ isAuthenticated ()
   String rfidCode;
 
   return (rfidTagHandled(rfidCode) && rfidCodeExists(rfidCode));
+}
+
+void
+generateBeepSound ()
+{
+  const unsigned long toneFrequency = 500;
+
+  const unsigned long durationTime = 50;
+
+  NewTone(PIEZO_BUZZER_PIN, toneFrequency);
+
+  delay(durationTime);
+
+  noNewTone();
+
+  delay(durationTime);
 }
 
 bool
@@ -564,7 +632,7 @@ readRfids()
   {
     while (file.available())
     {
-      getRfids().add(file.readStringUntil('\n'));
+      getRfids().push_back(file.readStringUntil('\n'));
     }
 
     file.close();
@@ -606,7 +674,7 @@ readMobiles()
   {
     while (file.available())
     {
-      getMobiles().add(file.readStringUntil('\n'));
+      getMobiles().push_back(file.readStringUntil('\n'));
     }
 
     file.close();
@@ -622,13 +690,9 @@ rfidCodeExists (const String & rfidCode)
 {
   const String cipherText = xorEncryption (encryptionKey, rfidCode);
 
-  const byte numberOfRfids = getRfids().size();
-
-  for (byte i = 0; i < numberOfRfids; i++)
+  for (SimpleList<String>::iterator element = getRfids().begin(); element != getRfids().end(); ++element)
   {
-    const String rfid = getRfids().get(i);
-
-    if (cipherText == rfid)
+    if (cipherText == *element)
     {
       return true;
     }
@@ -638,19 +702,15 @@ rfidCodeExists (const String & rfidCode)
 }
 
 void
-notifyUsers ()
+notifyUsers (const unsigned long delayTimeOfCallRingingDuration, const byte maximumNotificationsPerUser)
 {
-  const byte notificationsPerUser = 3;
-
-  const byte numberOfMobiles = getMobiles().size();
-
-  for (byte i = 0; i < notificationsPerUser; i++)
+  for (SimpleList<String>::iterator element = getMobiles().begin(); element != getMobiles().end(); ++element)
   {
-    for (byte j = 0; j < numberOfMobiles; j++)
-    {
-      const String mobile = getMobiles().get(j);
+    const String mobile = *element;
 
-      getGsm().missedCall(mobile, DELAY_TIME_OF_CALL_RINGING_DURATION);
+    for (byte i = 0; i < maximumNotificationsPerUser; i++)
+    {
+      getGsm().missedCall(mobile, delayTimeOfCallRingingDuration);
 
       getGsm().sendSms(mobile, smsText);
     }
@@ -710,18 +770,12 @@ setup ()
 
   initializeDoorSensor();
 
-  printString(F("Init PIR sensor"));
-
-  initializePirSensor();
-
   printString(F("Init GSM"));
 
   if (!initializeGsm())
   {
     systemError (F("GSM failed"));
   }
-
-  printString(F("GSM OK"));
 
   printString(F("Init SD card"));
 
@@ -730,16 +784,12 @@ setup ()
     systemError (F("SD card failed"));
   }
 
-  printString(F("SD card OK"));
-
   printString(F("Read RFIDs"));
 
   if (!readRfids())
   {
     systemError(F("RFIDs failed"));
   }
-
-  printString(F("RFIDs OK"));
 
   printString(F("Read mobiles"));
 
@@ -748,16 +798,12 @@ setup ()
     systemError(F("Mobiles failed"));
   }
 
-  printString(F("Mobiles OK"));
-
   printString(F("Read SMS text"));
 
   if (!readSmsText())
   {
     systemError(F("SMS text failed"));
   }
-
-  printString(F("SMS text OK"));
 
   printString(F("Init RFID"));
 

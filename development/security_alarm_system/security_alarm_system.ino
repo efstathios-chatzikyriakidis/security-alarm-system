@@ -233,6 +233,8 @@ activationPreparationUpdateOperation()
 void
 enabledEnterOperation ()
 {
+  sirenOff();
+
   printStringWithoutDelay(F("Alarm enabled"));
 }
 
@@ -297,8 +299,6 @@ realThreatPartBUpdateOperation ()
 {
   if (doorIsClosed())
   {
-    sirenOff();
-
     getFsm().transitionTo(getEnabledState());
   }
 

@@ -704,15 +704,23 @@ rfidCodeExists (const String & rfidCode)
 void
 notifyUsers (const unsigned long delayTimeOfCallRingingDuration, const byte maximumNotificationsPerUser)
 {
-  for (SimpleList<String>::iterator element = getMobiles().begin(); element != getMobiles().end(); ++element)
+  for (byte i = 0; i < maximumNotificationsPerUser; i++)
   {
-    const String mobile = *element;
-
-    for (byte i = 0; i < maximumNotificationsPerUser; i++)
+    for (SimpleList<String>::iterator element = getMobiles().begin(); element != getMobiles().end(); ++element)
     {
-      getGsm().missedCall(mobile, delayTimeOfCallRingingDuration);
+      const String mobile = *element;
 
       getGsm().sendSms(mobile, smsText);
+    }
+  }
+
+  for (byte i = 0; i < maximumNotificationsPerUser; i++)
+  {
+    for (SimpleList<String>::iterator element = getMobiles().begin(); element != getMobiles().end(); ++element)
+    {
+      const String mobile = *element;
+
+      getGsm().missedCall(mobile, delayTimeOfCallRingingDuration);
     }
   }
 }

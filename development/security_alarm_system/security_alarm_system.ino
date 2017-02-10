@@ -38,7 +38,7 @@ const byte SIREN_PIN = A0;
 const unsigned long DELAY_TIME_OF_CALL_RINGING_DURATION = 10000; // 10 seconds
 const unsigned long DELAY_TIME_BEFORE_ENABLING_ALARM = 120000; // 2 minutes
 const unsigned long DELAY_TIME_OF_CRITICAL_SECTION = 10000; // 10 seconds
-const unsigned long DELAY_TIME_BEFORE_BEEPING_SOUNDS = 7000; // 7 seconds
+const unsigned long DELAY_TIME_BEFORE_BEEPING_SOUNDS = 9000; // 9 seconds
 const unsigned long DELAY_TIME_OF_RINGING_SIREN = 600000; // 10 minutes
 const unsigned long DELAY_TIME_OF_LCD_MESSAGE = 2000; // 2 seconds
 
